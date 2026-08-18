@@ -3,12 +3,12 @@ const path = require('path');
 const AutoLaunch = require('auto-launch');
 
 const { inicializarRutas: inicializarRutasIdentidad, inicializarConfig } = require('./setup/generar-identidad');
-const { leerConfigLocal, actualizarImpresora, eliminarImpresora } = require('./config');
+const { leerConfigLocal, actualizarImpresora, eliminarImpresora, actualizarPlataforma } = require('./config');
 const { listarImpresorasSistema } = require('./printers/discovery');
 const { inicializarRutas: inicializarRutasQueue, iniciarProcesamiento } = require('./queue');
 const { iniciarHeartbeat, obtenerUltimoEstado } = require('./heartbeat');
 const { iniciarServidorImpresion } = require('./server');
-const { iniciarReporteAPlataforma } = require('./plataforma');
+const { iniciarReporteAPlataforma, registrarSiHaceFalta } = require('./plataforma');
 
 let mainWindow = null;
 let tray = null;
@@ -106,7 +106,9 @@ function registrarIpc() {
       token: cfg.token,
       puerto_ws: cfg.puerto_ws,
       impresoras: cfg.printers || {},
-      heartbeat: obtenerUltimoEstado()
+      heartbeat: obtenerUltimoEstado(),
+      plataforma_url: cfg.plataforma_url,
+      plataforma_conectado: !!cfg.plataforma_token
     };
   });
 
@@ -134,6 +136,13 @@ function registrarIpc() {
 
   ipcMain.handle('config:abrir-carpeta-datos', () => {
     shell.openPath(app.getPath('userData'));
+  });
+
+  ipcMain.handle('config:guardar-plataforma', async (evento, datos) => {
+    actualizarPlataforma(datos);
+    const resultado = await registrarSiHaceFalta();
+    const cfg = leerConfigLocal();
+    return { ...resultado, plataforma_url: cfg.plataforma_url, plataforma_conectado: !!cfg.plataforma_token };
   });
 }
 

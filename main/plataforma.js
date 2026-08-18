@@ -39,9 +39,20 @@ async function llamarPlataforma(ruta, opciones) {
   }
 }
 
+/**
+ * @returns {Promise<{ok: boolean, mensaje: string}>} pensado tanto para el
+ * llamado periodico (que ignora el resultado) como para el boton "Conectar"
+ * de la ventana de configuracion (que SI necesita feedback inmediato).
+ */
 async function registrarSiHaceFalta() {
   const config = leerConfigLocal();
-  if (!config.plataforma_url || config.plataforma_token) return;
+
+  if (!config.plataforma_url) {
+    return { ok: false, mensaje: 'Configura la URL de la plataforma primero.' };
+  }
+  if (config.plataforma_token) {
+    return { ok: true, mensaje: 'Ya conectado.' };
+  }
 
   const respuesta = await llamarPlataforma('/agente/registrar', {
     method: 'POST',
@@ -53,14 +64,20 @@ async function registrarSiHaceFalta() {
     })
   });
 
-  if (!respuesta || !respuesta.ok) {
-    if (respuesta) console.warn('[plataforma] No se pudo registrar el agente:', respuesta.status);
-    return;
+  if (!respuesta) {
+    return { ok: false, mensaje: 'No se pudo conectar con la plataforma (revisa la URL y la conexion a internet).' };
+  }
+
+  if (!respuesta.ok) {
+    const cuerpo = await respuesta.json().catch(() => ({}));
+    console.warn('[plataforma] No se pudo registrar el agente:', respuesta.status);
+    return { ok: false, mensaje: cuerpo.error || `La plataforma respondio con error ${respuesta.status}.` };
   }
 
   const datos = await respuesta.json();
   guardarConfigLocal({ ...leerConfigLocal(), plataforma_token: datos.token });
   console.log('[plataforma] Agente registrado en la plataforma.');
+  return { ok: true, mensaje: 'Conectado correctamente.' };
 }
 
 async function enviarHeartbeat() {

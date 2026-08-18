@@ -16,6 +16,21 @@
   </section>
 
   <section class="tarjeta">
+    <h2>Conexion con PrintBridge Platform</h2>
+    <p id="plataforma-estado">Cargando...</p>
+    <form id="form-plataforma">
+      <label>URL de la plataforma
+        <input type="url" name="plataforma_url" placeholder="https://printbridge.tu-dominio.com" required>
+      </label>
+      <label>Codigo de cliente
+        <input type="text" name="cliente_codigo" placeholder="el que te dio tu administrador" required>
+      </label>
+      <button type="submit">Conectar</button>
+    </form>
+    <p id="plataforma-mensaje"></p>
+  </section>
+
+  <section class="tarjeta">
     <h2>Impresoras configuradas</h2>
     <table>
       <thead><tr><th>Alias</th><th>Tipo</th><th>Destino</th><th>Estado</th><th></th></tr></thead>

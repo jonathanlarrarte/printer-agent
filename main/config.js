@@ -22,9 +22,25 @@ function eliminarImpresora(alias) {
   return guardarConfigLocal(config);
 }
 
+function actualizarPlataforma({ plataforma_url, cliente_codigo }) {
+  const config = leerConfigLocal();
+  const urlNueva = (plataforma_url || '').trim().replace(/\/+$/, '') || null;
+
+  // Si cambia la URL o el codigo de cliente, el token viejo (si habia) ya
+  // no sirve -- fuerza un re-registro contra el destino nuevo.
+  if (urlNueva !== config.plataforma_url || cliente_codigo !== config.cliente_codigo) {
+    config.plataforma_token = null;
+  }
+
+  config.plataforma_url = urlNueva;
+  config.cliente_codigo = cliente_codigo || 'sin-asignar';
+  return guardarConfigLocal(config);
+}
+
 module.exports = {
   leerConfigLocal,
   guardarConfigLocal,
   actualizarImpresora,
-  eliminarImpresora
+  eliminarImpresora,
+  actualizarPlataforma
 };

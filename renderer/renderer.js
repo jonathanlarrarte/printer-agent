@@ -1,3 +1,23 @@
+let formPlataformaCargado = false;
+
+function actualizarEstadoPlataforma(estado) {
+  const form = document.getElementById('form-plataforma');
+  if (!formPlataformaCargado) {
+    form.plataforma_url.value = estado.plataforma_url || '';
+    form.cliente_codigo.value = estado.cliente_codigo === 'sin-asignar' ? '' : estado.cliente_codigo;
+    formPlataformaCargado = true;
+  }
+
+  const p = document.getElementById('plataforma-estado');
+  if (!estado.plataforma_url) {
+    p.innerHTML = 'Sin configurar todavia -- completa la URL y el codigo de cliente abajo.';
+  } else if (estado.plataforma_conectado) {
+    p.innerHTML = '<span class="badge-online">Conectado</span>';
+  } else {
+    p.innerHTML = '<span class="badge-offline">Configurado, esperando conexion...</span>';
+  }
+}
+
 async function cargarEstado() {
   const estado = await window.printbridge.obtenerEstado();
 
@@ -8,6 +28,8 @@ async function cargarEstado() {
     Canal de impresion: <strong>ws://localhost:${estado.puerto_ws}/ws</strong><br>
     Token (usar en la integracion del POS): <code>${estado.token}</code>
   `;
+
+  actualizarEstadoPlataforma(estado);
 
   const tbody = document.getElementById('tbody-impresoras');
   tbody.innerHTML = '';
@@ -60,6 +82,22 @@ document.getElementById('form-impresora').addEventListener('submit', async (e) =
 
 document.getElementById('btn-carpeta').addEventListener('click', () => {
   window.printbridge.abrirCarpetaDatos();
+});
+
+document.getElementById('form-plataforma').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const datos = Object.fromEntries(fd.entries());
+  const mensajeEl = document.getElementById('plataforma-mensaje');
+
+  mensajeEl.textContent = 'Conectando...';
+  mensajeEl.className = '';
+
+  const resultado = await window.printbridge.guardarPlataforma(datos);
+
+  mensajeEl.textContent = resultado.mensaje;
+  mensajeEl.className = resultado.ok ? 'badge-online' : 'badge-offline';
+  actualizarEstadoPlataforma(resultado);
 });
 
 cargarEstado();
