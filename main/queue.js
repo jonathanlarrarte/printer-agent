@@ -30,6 +30,7 @@ function encolar(job) {
   const cola = leerCola();
   cola.push({ ...job, intentos: 0, timestamp: Date.now(), estado: 'pendiente' });
   guardarCola(cola);
+  notificarEstado(job, 'en_cola');
 }
 
 function onEstadoJob(callback) {
@@ -60,6 +61,7 @@ async function procesarCola() {
   const pendientes = [];
   for (const job of cola) {
     try {
+      notificarEstado(job, 'imprimiendo');
       const resultado = await conTimeout(dispatch(job), TIMEOUT_JOB_MS);
       notificarEstado(job, 'impreso', resultado);
     } catch (err) {

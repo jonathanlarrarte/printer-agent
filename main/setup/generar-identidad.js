@@ -19,7 +19,12 @@ function configPorDefecto() {
   return {
     dominios_permitidos: ['http://localhost', 'https://miapp-parque.com'],
     puerto_ws: 8181,
-    printers: {}
+    printers: {},
+    // Backend central (PrintBridge Platform). Mientras plataforma_url no
+    // este configurada, el agente sigue funcionando 100% local (ver
+    // main/plataforma.js) -- no es un requisito para imprimir.
+    plataforma_url: null,
+    plataforma_token: null
   };
 }
 

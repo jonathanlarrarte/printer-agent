@@ -8,6 +8,7 @@ const { listarImpresorasSistema } = require('./printers/discovery');
 const { inicializarRutas: inicializarRutasQueue, iniciarProcesamiento } = require('./queue');
 const { iniciarHeartbeat, obtenerUltimoEstado } = require('./heartbeat');
 const { iniciarServidorImpresion } = require('./server');
+const { iniciarReporteAPlataforma } = require('./plataforma');
 
 let mainWindow = null;
 let tray = null;
@@ -153,6 +154,7 @@ app.whenReady().then(async () => {
   iniciarServidorImpresion();
   iniciarProcesamiento();
   iniciarHeartbeat();
+  iniciarReporteAPlataforma();
 
   try {
     await configurarArranqueAutomatico();
