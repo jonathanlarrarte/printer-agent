@@ -1,0 +1,8 @@
+PrintBridge Agent
+
+Este software se instala para permitir la impresion desde el sistema
+POS hacia las impresoras conectadas a este equipo (recibos, brazaletes,
+etiquetas, cocina, etc.).
+
+Al continuar con la instalacion aceptas los terminos de uso provistos
+por tu proveedor de PrintBridge.

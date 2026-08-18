@@ -1,0 +1,61 @@
+{
+  "name": "printbridge-agent",
+  "version": "1.0.0",
+  "description": "PrintBridge Agent - agente de impresion multi-impresora para POS (Electron)",
+  "main": "main/main.js",
+  "author": "Tu Empresa",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "ws": "^8.17.0",
+    "node-thermal-printer": "^4.4.4",
+    "auto-launch": "^5.0.6"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.tuempresa.printbridge",
+    "productName": "PrintBridge Agent",
+    "asar": true,
+    "asarUnpack": [
+      "main/printers/*.ps1"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "preload.js",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "artifactName": "PrintBridge-Setup-${version}.${ext}",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "license": "LICENSE.txt"
+    }
+  }
+}
