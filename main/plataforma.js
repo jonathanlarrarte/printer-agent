@@ -1,7 +1,7 @@
 const os = require('os');
 const { leerConfigLocal, guardarConfigLocal } = require('./config');
 const { obtenerUltimoEstado } = require('./heartbeat');
-const { onEstadoJob } = require('./queue');
+const { onEstadoJob, encolar } = require('./queue');
 
 const INTERVALO_HEARTBEAT_MS = 20000;
 const TIMEOUT_REQUEST_MS = 5000;
@@ -99,10 +99,23 @@ async function enviarHeartbeat() {
     };
   }
 
-  await llamarPlataforma('/agente/heartbeat', {
+  const respuesta = await llamarPlataforma('/agente/heartbeat', {
     method: 'POST',
     headers: { Authorization: `Bearer ${config.plataforma_token}` },
     body: JSON.stringify({ version_agente: config.version_agente, impresoras })
+  });
+
+  if (!respuesta || !respuesta.ok) return;
+
+  // Unico "empuje" de la plataforma hacia el agente (impresiones de
+  // prueba pedidas desde el dashboard): viajan montadas en la respuesta
+  // del heartbeat, no por un canal aparte -- el agente sigue siendo quien
+  // inicia siempre la conexion. De aca en mas es un trabajo mas: mismos
+  // reintentos, mismo reporte de estado que un job real del POS.
+  const cuerpo = await respuesta.json().catch(() => null);
+  (cuerpo?.comandos_pendientes || []).forEach((comando) => {
+    console.log(`[plataforma] Comando de prueba recibido para "${comando.target}".`);
+    encolar({ id: comando.id, target: comando.target, format: comando.format, data: comando.data });
   });
 }
 
