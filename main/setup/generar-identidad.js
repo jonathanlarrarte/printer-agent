@@ -19,6 +19,9 @@ function configPorDefecto() {
   return {
     dominios_permitidos: ['http://localhost', 'https://miapp-parque.com'],
     puerto_ws: 8181,
+    // Canal HTTPS/WSS en paralelo al de arriba -- necesario si el POS esta
+    // servido por HTTPS (ver main/server.js y main/tls.js).
+    puerto_wss: 8182,
     printers: {},
     // Backend central (PrintBridge Platform). Mientras plataforma_url no
     // este configurada, el agente sigue funcionando 100% local (ver

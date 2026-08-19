@@ -27,7 +27,8 @@
     "productName": "PrintBridge Agent",
     "asar": true,
     "asarUnpack": [
-      "main/printers/*.ps1"
+      "main/printers/*.ps1",
+      "assets/tls/*"
     ],
     "directories": {
       "output": "dist"
@@ -55,7 +56,8 @@
       "artifactName": "PrintBridge-Setup-${version}.${ext}",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
-      "license": "LICENSE.txt"
+      "license": "LICENSE.txt",
+      "include": "build/installer.nsh"
     }
   }
 }

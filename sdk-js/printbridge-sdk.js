@@ -17,19 +17,31 @@
  * Nota: el token se obtiene una vez, en la instalacion (pantalla local
  * localhost:8181), y el integrador lo guarda de forma segura junto con
  * la configuracion de esa caja/terminal (por ejemplo en su backend).
+ *
+ * HTTPS/WSS: el agente expone el mismo canal por dos puertos -- HTTP en
+ * `puerto` (8181 por defecto, sin cambios) y HTTPS/WSS en `puertoSeguro`
+ * (8182 por defecto). Si tu POS esta servido por HTTPS, el navegador
+ * bloquea por "mixed content" cualquier ws:// hacia localhost -- por eso
+ * este SDK detecta solo el protocolo de la pagina actual (`seguro`,
+ * default automatico) y usa wss:// + puertoSeguro en ese caso, sin que
+ * tengas que cambiar nada vos mismo.
  */
 class PrintBridge {
-  constructor({ host = 'localhost', puerto = 8181, token } = {}) {
+  constructor({ host = 'localhost', puerto = 8181, puertoSeguro = 8182, token, seguro } = {}) {
     this.host = host;
     this.puerto = puerto;
+    this.puertoSeguro = puertoSeguro;
     this.token = token;
+    this.seguro = seguro ?? (typeof window !== 'undefined' && window.location?.protocol === 'https:');
     this.ws = null;
     this.callbacks = new Map();
   }
 
   conectar() {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(`ws://${this.host}:${this.puerto}/ws`);
+      const protocolo = this.seguro ? 'wss' : 'ws';
+      const puerto = this.seguro ? this.puertoSeguro : this.puerto;
+      this.ws = new WebSocket(`${protocolo}://${this.host}:${puerto}/ws`);
 
       this.ws.onopen = () => resolve();
       this.ws.onerror = (err) => reject(err);

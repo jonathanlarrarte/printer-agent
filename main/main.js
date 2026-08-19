@@ -105,6 +105,7 @@ function registrarIpc() {
       version: cfg.version_agente,
       token: cfg.token,
       puerto_ws: cfg.puerto_ws,
+      puerto_wss: cfg.puerto_wss || cfg.puerto_ws + 1,
       impresoras: cfg.printers || {},
       heartbeat: obtenerUltimoEstado(),
       plataforma_url: cfg.plataforma_url,

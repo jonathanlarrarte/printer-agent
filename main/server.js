@@ -1,26 +1,37 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const https = require('https');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
 const { leerConfigLocal } = require('./config');
 const { validarToken, validarOrigen } = require('./auth');
 const { encolar, onEstadoJob } = require('./queue');
+const { obtenerCredencialesTLS } = require('./tls');
 
-let serverInstance = null;
+let servidorHttp = null;
+let servidorHttps = null;
 
 /**
  * Arranca el servidor de impresion (WS + HTTP) embebido en el proceso
  * de Electron. Este es el mismo canal que usa el SDK JS desde el POS web.
  * La UI de configuracion de la app Electron habla con la config via IPC,
  * no via HTTP -- este servidor es solo para el POS externo.
+ *
+ * Corre DOS listeners en paralelo, no uno solo: el HTTP original en
+ * `puerto_ws` (sin cambios, para no romper integraciones existentes) y uno
+ * HTTPS/WSS en `puerto_wss` (por defecto puerto_ws + 1). El HTTPS es
+ * necesario si el POS mismo esta servido por HTTPS -- un navegador
+ * bloquea por "mixed content" cualquier fetch/WebSocket en texto plano
+ * hacia localhost desde una pagina https (ver Printing Examples guide).
  */
 function iniciarServidorImpresion() {
-  if (serverInstance) return serverInstance;
+  if (servidorHttp) return servidorHttp;
 
   const config = leerConfigLocal();
-  const PUERTO = config.puerto_ws || 8181;
+  const PUERTO_HTTP = config.puerto_ws || 8181;
+  const PUERTO_HTTPS = config.puerto_wss || PUERTO_HTTP + 1;
 
   const app = express();
   app.use(cors());
@@ -41,8 +52,30 @@ function iniciarServidorImpresion() {
     res.json({ ok: true, instalacion_id: cfg.instalacion_id, version: cfg.version_agente });
   });
 
-  const server = http.createServer(app);
-  const wss = new WebSocketServer({ server, path: '/ws' });
+  servidorHttp = http.createServer(app);
+  adjuntarWebSocket(servidorHttp);
+  servidorHttp.listen(PUERTO_HTTP, () => {
+    console.log(`[server] Canal de impresion (HTTP) activo en http://localhost:${PUERTO_HTTP} (WS: /ws)`);
+  });
+
+  try {
+    const credencialesTLS = obtenerCredencialesTLS();
+    servidorHttps = https.createServer(credencialesTLS, app);
+    adjuntarWebSocket(servidorHttps);
+    servidorHttps.listen(PUERTO_HTTPS, () => {
+      console.log(`[server] Canal de impresion (HTTPS) activo en https://localhost:${PUERTO_HTTPS} (WSS: /ws)`);
+    });
+  } catch (err) {
+    // No es fatal: el agente sigue funcionando 100% por HTTP. Solo afecta
+    // a integraciones que necesiten conectarse desde una pagina HTTPS.
+    console.warn('[server] No se pudo iniciar el canal HTTPS:', err.message);
+  }
+
+  return servidorHttp;
+}
+
+function adjuntarWebSocket(servidorBase) {
+  const wss = new WebSocketServer({ server: servidorBase, path: '/ws' });
 
   wss.on('connection', (ws, req) => {
     const origin = req.headers.origin;
@@ -79,19 +112,16 @@ function iniciarServidorImpresion() {
       }
     });
   });
-
-  server.listen(PUERTO, () => {
-    console.log(`[server] Canal de impresion activo en http://localhost:${PUERTO} (WS: /ws)`);
-  });
-
-  serverInstance = server;
-  return server;
 }
 
 function detenerServidorImpresion() {
-  if (serverInstance) {
-    serverInstance.close();
-    serverInstance = null;
+  if (servidorHttp) {
+    servidorHttp.close();
+    servidorHttp = null;
+  }
+  if (servidorHttps) {
+    servidorHttps.close();
+    servidorHttps = null;
   }
 }
 

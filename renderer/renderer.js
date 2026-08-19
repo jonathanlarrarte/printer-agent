@@ -25,7 +25,8 @@ async function cargarEstado() {
     Instalacion: <strong>${estado.instalacion_id}</strong><br>
     Cliente: <strong>${estado.cliente_codigo}</strong><br>
     Version: <strong>${estado.version}</strong><br>
-    Canal de impresion: <strong>ws://localhost:${estado.puerto_ws}/ws</strong><br>
+    Canal de impresion: <strong>ws://localhost:${estado.puerto_ws}/ws</strong>
+      <span style="color:#888">(o wss://localhost:${estado.puerto_wss}/ws si tu POS es HTTPS)</span><br>
     Token (usar en la integracion del POS): <code>${estado.token}</code>
   `;
 
