@@ -7,12 +7,14 @@ const INTERVALO_HEARTBEAT_MS = 20000;
 const TIMEOUT_REQUEST_MS = 5000;
 
 // Traduce los estados que ya emite queue.js (via onEstadoJob) al catalogo de
-// tipo_evento de la plataforma (seccion 8.1 del doc de arquitectura).
+// event_type de la plataforma (seccion 8.1 del doc de arquitectura -- los
+// valores del catalogo son en ingles de punta a punta, ver App\Support\EventType
+// del lado de la plataforma).
 const TIPO_EVENTO_POR_ESTADO = {
-  en_cola: 'trabajo.creado',
-  imprimiendo: 'trabajo.imprimiendo',
-  impreso: 'trabajo.impreso',
-  fallo_definitivo: 'trabajo.fallo_definitivo'
+  en_cola: 'job.created',
+  imprimiendo: 'job.printing',
+  impreso: 'job.printed',
+  fallo_definitivo: 'job.failed'
 };
 
 async function llamarPlataforma(ruta, opciones) {
@@ -54,13 +56,13 @@ async function registrarSiHaceFalta() {
     return { ok: true, mensaje: 'Ya conectado.' };
   }
 
-  const respuesta = await llamarPlataforma('/agente/registrar', {
+  const respuesta = await llamarPlataforma('/agent/register', {
     method: 'POST',
     body: JSON.stringify({
-      instalacion_id: config.instalacion_id,
-      cliente_codigo: config.cliente_codigo,
-      nombre_descriptivo: os.hostname(),
-      version_agente: config.version_agente
+      installation_id: config.instalacion_id,
+      client_code: config.cliente_codigo,
+      display_name: os.hostname(),
+      agent_version: config.version_agente
     })
   });
 
@@ -91,18 +93,18 @@ async function enviarHeartbeat() {
     const estado = estadoLocal[alias] || {};
     impresoras[alias] = {
       online: !!estado.online,
-      tipo: cfg.tipo,
+      type: cfg.tipo,
       ip: cfg.ip || null,
-      puerto: cfg.puerto || null,
-      nombre_sistema: cfg.nombre_sistema || null,
-      protocolo: cfg.formato_default || null
+      port: cfg.puerto || null,
+      system_name: cfg.nombre_sistema || null,
+      protocol: cfg.formato_default || null
     };
   }
 
-  const respuesta = await llamarPlataforma('/agente/heartbeat', {
+  const respuesta = await llamarPlataforma('/agent/heartbeat', {
     method: 'POST',
     headers: { Authorization: `Bearer ${config.plataforma_token}` },
-    body: JSON.stringify({ version_agente: config.version_agente, impresoras })
+    body: JSON.stringify({ agent_version: config.version_agente, printers: impresoras })
   });
 
   if (!respuesta || !respuesta.ok) return;
@@ -113,7 +115,7 @@ async function enviarHeartbeat() {
   // inicia siempre la conexion. De aca en mas es un trabajo mas: mismos
   // reintentos, mismo reporte de estado que un job real del POS.
   const cuerpo = await respuesta.json().catch(() => null);
-  (cuerpo?.comandos_pendientes || []).forEach((comando) => {
+  (cuerpo?.pending_commands || []).forEach((comando) => {
     console.log(`[plataforma] Comando de prueba recibido para "${comando.target}".`);
     encolar({ id: comando.id, target: comando.target, format: comando.format, data: comando.data });
   });
@@ -126,14 +128,14 @@ async function reportarEvento(evento) {
   const tipoEvento = TIPO_EVENTO_POR_ESTADO[evento.estado];
   if (!tipoEvento) return;
 
-  await llamarPlataforma('/agente/eventos', {
+  await llamarPlataforma('/agent/events', {
     method: 'POST',
     headers: { Authorization: `Bearer ${config.plataforma_token}` },
     body: JSON.stringify({
-      tipo_evento: tipoEvento,
-      job_id_externo: evento.id,
+      event_type: tipoEvento,
+      external_job_id: evento.id,
       target: evento.target,
-      error_mensaje: evento.estado === 'fallo_definitivo' ? String(evento.detalle || '') : undefined
+      error_message: evento.estado === 'fallo_definitivo' ? String(evento.detalle || '') : undefined
     })
   });
 }
