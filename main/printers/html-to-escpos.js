@@ -53,6 +53,26 @@ async function renderizarHTMLaBitmap(html, anchoPx = 576) {
     `);
     console.log('[html-to-escpos] Paso 5: HTML inyectado correctamente.');
 
+    // Reset de renderizado: sin esto, el antialiasing normal de Chromium
+    // deja bordes grises en el texto que el umbral de imagenABitsEmpaquetados
+    // (una linea dura blanco/negro) convierte en manchas y "ruido" en vez de
+    // trazos limpios -- es la causa principal de que un recibo salga
+    // impreso como si fuera una foto borrosa en vez de texto nitido. Se
+    // inserta como PRIMER elemento del <head> para que cualquier <style>
+    // del HTML recibido (que aparece despues en el DOM) siga pudiendo
+    // pisar el font-family/tamano por cascada normal.
+    await ventana.webContents.executeJavaScript(`
+      (function () {
+        var reset = document.createElement('style');
+        reset.textContent = [
+          '* { -webkit-font-smoothing: none; text-rendering: optimizeSpeed; }',
+          'body { font-family: Arial, "Segoe UI", sans-serif; color: #000; background: #fff; margin: 0; }'
+        ].join('\\n');
+        var head = document.head || document.documentElement;
+        head.insertBefore(reset, head.firstChild);
+      })();
+    `);
+
     // Pequena espera para que termine el reflow/layout del contenido inyectado
     await new Promise((resolve) => setTimeout(resolve, 200));
 

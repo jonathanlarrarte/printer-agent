@@ -1,0 +1,128 @@
+<!--
+  Plantilla de recibo para format: 'html' (ver main/printers/html-to-escpos.js).
+
+  Por que se ve como se ve:
+  -------------------------
+  Esto NO se imprime como texto -- se renderiza como una pagina web real y
+  se manda a la impresora como una IMAGEN de 1 bit (blanco/negro puro, sin
+  grises). Eso significa dos reglas duras que esta plantilla ya respeta:
+
+  1. Ancho fijo en PIXELES, no en mm/cm/%. 576px = 80mm a 203dpi (el
+     estandar de las termicas de recibo). Si tu impresora es de 58mm,
+     cambia el ancho de <body> abajo Y el "ancho_px" que mandes en el job
+     a 384 (58mm) en vez de 576.
+  2. Fuentes GRANDES y en negrita. Un texto chico o de trazo fino pierde
+     nitidez al pasar por el umbral blanco/negro -- por eso el body usa
+     28px+ y bold en vez de los 12-14px normales de una pagina web. El
+     agente ya fuerza -webkit-font-smoothing:none para reducir el
+     antialiasing, pero el tamano/grosor de fuente es lo que mas impacta
+     en que tan "nitido" o "borroso" sale.
+
+  Como usarla:
+  ------------
+  Interpola tus datos reales (nombre del negocio, items, totales) en este
+  HTML desde tu sistema POS -- con un template literal de JS, Twig, Blade,
+  lo que uses -- y mandalo como:
+
+    { "target": "receipt", "format": "html", "data": { "html": "<html>...", "ancho_px": 576 } }
+-->
+<html>
+<head>
+<style>
+  body {
+    width: 576px;
+    margin: 0;
+    padding: 16px 20px;
+    font-family: Arial, "Segoe UI", sans-serif;
+    font-weight: bold;
+    font-size: 28px;
+    line-height: 1.35;
+    color: #000;
+    background: #fff;
+  }
+  .centrado { text-align: center; }
+  .negocio {
+    font-size: 44px;
+    margin-bottom: 4px;
+  }
+  .subtexto {
+    font-size: 24px;
+    font-weight: normal;
+  }
+  .separador {
+    border: none;
+    border-top: 3px solid #000;
+    margin: 16px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 26px;
+  }
+  th {
+    text-align: left;
+    border-bottom: 3px solid #000;
+    padding-bottom: 6px;
+  }
+  th.derecha, td.derecha { text-align: right; }
+  td { padding: 6px 0; vertical-align: top; }
+  .fila-total td {
+    font-size: 32px;
+    border-top: 3px solid #000;
+    padding-top: 10px;
+  }
+  .pie {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: normal;
+  }
+</style>
+</head>
+<body>
+
+  <div class="centrado">
+    <div class="negocio">Parque Aventura</div>
+    <div class="subtexto">NIT 900.123.456-7</div>
+    <div class="subtexto">Caja 3 &middot; 19/08/2026 17:42</div>
+  </div>
+
+  <hr class="separador">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="derecha">Cant.</th>
+        <th class="derecha">Precio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Entrada general</td>
+        <td class="derecha">2</td>
+        <td class="derecha">$45.000</td>
+      </tr>
+      <tr>
+        <td>Brazalete acceso VIP</td>
+        <td class="derecha">1</td>
+        <td class="derecha">$30.000</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table>
+    <tr class="fila-total">
+      <td>TOTAL</td>
+      <td class="derecha" colspan="2">$120.000</td>
+    </tr>
+  </table>
+
+  <hr class="separador">
+
+  <div class="centrado pie">
+    Gracias por tu visita<br>
+    Conserva este ticket para reclamar tu brazalete
+  </div>
+
+</body>
+</html>
